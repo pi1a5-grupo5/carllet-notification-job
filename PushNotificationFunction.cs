@@ -1,4 +1,4 @@
-using System;
+using Carllet_Notification_Job.Data;
 using Expo.Server.Client;
 using Expo.Server.Models;
 using Microsoft.Azure.Functions.Worker;
@@ -19,18 +19,24 @@ namespace NotificationService
         public async Task RunAsync([TimerTrigger("*/20 * * * * *")] MyInfo myTimer, ILogger myLog)
         {
             _logger.LogInformation($"Notificações enviadas - Horário atual: {DateTime.Now}");
+            var _db = new DbService();
 
+            List<User> userNotif = await _db.GetUsers();
 
             var pushApi = new PushApiClient();
- 
-            var pushTicketReq = new PushTicketRequest()
-            {
-                PushTo = "ExponentPushToken[wCyoWTJdMLGODi2IgQWx-T]",
-                PushTitle = "Manutenção Pendente",
-                PushBody = "Vc tem manutenção pendente"
-            };
 
-            var result = await pushApi.PushSendAsync(pushTicketReq);
+            userNotif.ForEach(async user =>
+            {
+                var pushTicketReq = new PushTicketRequest()
+                {
+                    PushTo = $"ExponentPushToken[{user.DeviceId}]",
+                    PushTitle = "Manutenção Pendente",
+                    PushBody = $"{user.Name}: Você tem manutenção pendente"
+                };
+
+                var result = await pushApi.PushSendAsync(pushTicketReq);
+            });
+
         }
     }
 
